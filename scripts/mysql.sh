@@ -9,20 +9,22 @@
 # the script is also expecting to have at least a 00_databasename_description.sql file
 # that it can use to extract the name of the database from.
 #
-# - author: Anwar Ishmar
-# - refactored by: Matteo Pescarin <matteo.pescarin[AT]steellondon.com>
+# - author: Matteo Pescarin <matteo.pescarin[AT]steellondon.com>
 #
 #
 # This code is provided 'as-is'
 # and released under the GPLv2
 
 # defaults
-DEFAULT_DB_SNAPSHOT_DIR="/vagrant/_database/"
+DEFAULT_PROJECT_ROOT="/vagrant/"
+DEFAULT_DB_SNAPSHOT_DIR="${DEFAULT_PROJECT_ROOT}_database/"
+MYSQL_ROOT_USER='root'
+MYSQL_ROOT_PASS='password'
 
 # application variables
-DB_NAME=""
-DB_SNAPSHOT=""
-PROJECT_ROOT=""
+#DB_NAME=""
+#DB_SNAPSHOT=""
+#PROJECT_ROOT=""
 
 # application related variables
 VERSION="0.1"
@@ -57,6 +59,20 @@ function quit {
     exit $1
 }
 
+function create_db() {
+    [[ -n $BE_VERBOSE ]] && echo ">> Creating the database $1 and the user $1 with no password"
+    mysql -u'${MYSQL_ROOT_USER}' -p'${MYSQL_ROOT_PASS}' <<<EOF
+CREATE DATABASE $1 CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE USER "$1"@'%' IDENTIFIED BY PASSWORD '';
+GRANT ALL ON $1.* TO "$1"@'%';
+EOF
+}
+
+function load_sql() {
+    [[ -n $BE_VERBOSE ]] && echo ">> Loading $1 in the $DB_NAME db"
+    mysql -u'${MYSQL_ROOT_USER}' -p'${MYSQL_ROOT_PASS}' $DB_NAME < $1
+}
+
 # no problems if there are no arguments passed, we'll use the default arguments
 #if [ $# -eq "$NO_ARGS" ]; then
 #    version
@@ -66,7 +82,7 @@ function quit {
 
 # The expected flags are
 #  h v r
-while getopts ":hnve:b:u:" Option
+while getopts ":hvd:s:p:" Option
 do
     case $Option in
         h ) version
@@ -74,10 +90,8 @@ do
             quit 0
             ;;
         v ) BE_VERBOSE=true
-            VERBOSE_OPT=("-v")
             ;;
-        d ) [ ! -e $OPTARG ] && error "'$OPTARG' not accessible" && quit $E_OPTERROR
-            DB_NAME=$OPTARG
+        d ) DB_NAME=$OPTARG
 			;;
         s ) [ ! -e $OPTARG ] && error "'$OPTARG' not accessible" && quit $E_OPTERROR
             DB_SNAPSHOT=$OPTARG
@@ -93,57 +107,56 @@ done
 # if one exists.
 shift $(($OPTIND - 1))
 
+# initialise the missing variables
+if [[ ! -n $PROJECT_ROOT ]]
+then
+    PROJECT_ROOT=${DEFAULT_PROJECT_ROOT}
+fi
+
+# DEPRECATED - retro-compatibility stuff
+# DB_SNAPSHOT has not been passed
+if [[ ! -n $DB_SNAPSHOT ]]
+then
+    # let's look in DEFAULT_DB_SNAPSHOT_DIR
+    if [[ -e $DEFAULT_DB_SNAPSHOT_DIR ]]
+    then
+        # if there's more than one file everything will fail
+        for file in ${DEFAULT_DB_SNAPSHOT_DIR}*.sql
+        do
+            [[ -n $BE_VERBOSE ]] && echo ">> Found snapshot $file"
+            DB_SNAPSHOT=$file
+            DB_NAME=`basename $file .sql`
+        done
+    fi
+elif [[ ! -n $DB_SNAPSHOT ]] && [[ -n $DB_NAME ]]
+then
+    echo ">> no snapshot defined, db ${DB_NAME} creation only."
+    # no snapshot, but we have a db name, create only
+    CREATE_DB_ONLY=true
+elif [[ -n $DB_SNAPSHOT ]] && [[ ! -n $DB_NAME ]]
+then
+    echo ">> snapshot defined, no db defined. Guessing."
+    DB_NAME=`basename $DB_SNAPSHOT .sql`
+fi
+
 [[ -n $BE_VERBOSE ]] && echo ">> PROJECT_ROOT: ${PROJECT_ROOT}"
 [[ -n $BE_VERBOSE ]] && echo ">> DB_NAME     : ${DB_NAME}"
 [[ -n $BE_VERBOSE ]] && echo ">> DB_SNAPSHOT : ${DB_SNAPSHOT}"
 
-
-# FIXME
-DB_DIR="/vagrant/_database/"
-
-echo "Installing MySQL"
-echo mysql-server mysql-server/root_password select "password" | debconf-set-selections
-echo mysql-server mysql-server/root_password_again select "password" | debconf-set-selections
-apt-get install -y -qq mysql-server
-
-echo "Configuring MySQL"
-cp /universal-vagrant/configs/my.cnf /etc/mysql/my.cnf
-
-echo "Restarting MySQL"
-service mysql restart
-
-# running migrations, see top of the file for details
-if [ -d ${DB_DIR} ]
+# no snapshot no party
+if [[ ! -n ${DB_NAME} ]] && [[ ! -n ${DB_SNAPSHOT} ]]
 then
-    echo "Setting up project database(s)"
-    if [ -e ${DB_DIR}00*.sql ]
-    then
-        dbname=`basename ${DB_DIR}00.*sql | cut -d2 -f_`
-        # create the db
-        # create the user without password
-        echo 'Creating the database and the user'
-        mysql -u'root' -p'password' <<<EOF
-CREATE DATABASE $dbname CHARACTER SET utf8 COLLATE utf8_general_ci;
-CREATE USER "${dbname}"@'%' IDENTIFIED BY PASSWORD '';
-GRANT ALL ON $dbname.* TO "${dbname}"@'%';
-EOF
-        # import all the SQL files into $dbname
-        echo 'running all migrations'
-        sql_files="/vagrant/_database/*.sql"
-        for file in $sql_files
-        do
-            if [ -f $file ]
-            then
-                mysql -u'root' -p'password' "$db_name" < $file
-            else
-                echo "No project database(s) to import"
-            fi
-        done;
-    else
-        echo "Initial migration file not found (00_dbname.sql)"
-    fi
-else
-  echo "Database directory not found"
-  # we don't return this as an error otherwise Vagrant will pester us about it
-  exit 0
+    [[ -n $BE_VERBOSE ]] && echo ">> Snapshot not found. Exiting."
+    exit 0
 fi
+
+
+[[ -n $BE_VERBOSE ]] && echo ">> Creating db ${DB_NAME}"
+create_db $DB_NAME
+if [[ -n $CREATE_DB_ONLY ]]
+then
+    [[ -n $BE_VERBOSE ]] && echo ">> Filling db with ${DB_SNAPSHOT}"
+    query_db $DB_SNAPSHOT
+fi
+
+exit 0
