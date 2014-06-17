@@ -20,11 +20,15 @@ DEFAULT_PROJECT_ROOT="/vagrant/"
 DEFAULT_DB_SNAPSHOT_DIR="${DEFAULT_PROJECT_ROOT}_database/"
 MYSQL_ROOT_USER='root'
 MYSQL_ROOT_PASS='password'
+DEFAULT_DB_USER=$MYSQL_ROOT_USER
+DEFAULT_DB_PASS=$MYSQL_ROOT_PASS
 
 # application variables
 #DB_NAME=""
 #DB_SNAPSHOT=""
 #PROJECT_ROOT=""
+#DB_USER=""
+#DB_PASS=""
 
 # application related variables
 VERSION="0.1"
@@ -35,12 +39,14 @@ OLD_IFS="$IFS"
 IFS=','
 
 function usage() {
-    echo -e "Syntax: `basename $0` [-h|-v] [-d <DB_NAME>] [-s <DB_SNAPSHOT>] [-p <PROJECT_ROOT>]
+    echo -e "Syntax: `basename $0` [-h|-v] [-d <DB_NAME>] [-s <DB_SNAPSHOT>] [-u <DB_USER>] [-p <DB_PASS>] [-r <PROJECT_ROOT>]
 \t-h: shows this help
 \t-v: be verbose
 \t-d <DB_NAME>: Name of the database to create
+\t-u <DB_USER>: Name of the user to give credentials to the db <DB_NAME>
+\t-p <DB_PASS>: Password for the <DB_USER>
 \t-s <DB_SNAPSHOT>: absolute path to the sql file to be used to fill the database
-\t-p <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM
+\t-r <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM
 \n"
 }
 
@@ -60,11 +66,11 @@ function quit {
 }
 
 function create_db() {
-    [[ -n $BE_VERBOSE ]] && echo ">> Creating the database $1 and the user $1 with no password"
+    [[ -n $BE_VERBOSE ]] && echo ">> Creating the database $DB_NAME and the user $DB_USER with password '${DB_PASS}'"
     mysql -u'${MYSQL_ROOT_USER}' -p'${MYSQL_ROOT_PASS}' <<<EOF
-CREATE DATABASE $1 CHARACTER SET utf8 COLLATE utf8_general_ci;
-CREATE USER "$1"@'%' IDENTIFIED BY PASSWORD '';
-GRANT ALL ON $1.* TO "$1"@'%';
+CREATE DATABASE $DB_NAME CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE USER "$DB_USER"@'%' IDENTIFIED BY PASSWORD "${DB_PASS}";
+GRANT ALL ON $DB_NAME.* TO "$DB_USER"@'%';
 EOF
 }
 
@@ -93,10 +99,14 @@ do
             ;;
         d ) DB_NAME=$OPTARG
 			;;
+        u ) DB_USER=$OPTARG
+			;;
+        p ) DB_PASS=$OPTARG
+			;;
         s ) [ ! -e $OPTARG ] && error "'$OPTARG' not accessible" && quit $E_OPTERROR
             DB_SNAPSHOT=$OPTARG
             ;;
-        p ) [ ! -e $OPTARG ] && error "'$OPTARG' not accessible" && quit $E_OPTERROR
+        r ) [ ! -e $OPTARG ] && error "'$OPTARG' not accessible" && quit $E_OPTERROR
             PROJECT_ROOT=$OPTARG
             ;;
     esac
@@ -111,6 +121,16 @@ shift $(($OPTIND - 1))
 if [[ ! -n $PROJECT_ROOT ]]
 then
     PROJECT_ROOT=${DEFAULT_PROJECT_ROOT}
+fi
+
+if [[ ! -n $DB_USER ]]
+then
+    DB_USER=${DEFAULT_DB_USER}
+fi
+
+if [[ ! -n $DB_PASS ]]
+then
+    DB_PASS=${DEFAULT_DB_PASS}
 fi
 
 # DEPRECATED - retro-compatibility stuff
@@ -141,6 +161,8 @@ fi
 
 [[ -n $BE_VERBOSE ]] && echo ">> PROJECT_ROOT: ${PROJECT_ROOT}"
 [[ -n $BE_VERBOSE ]] && echo ">> DB_NAME     : ${DB_NAME}"
+[[ -n $BE_VERBOSE ]] && echo ">> DB_USER     : ${DB_USER}"
+[[ -n $BE_VERBOSE ]] && echo ">> DB_PASS     : ${DB_PASS}"
 [[ -n $BE_VERBOSE ]] && echo ">> DB_SNAPSHOT : ${DB_SNAPSHOT}"
 
 # no snapshot no party
@@ -152,7 +174,7 @@ fi
 
 
 [[ -n $BE_VERBOSE ]] && echo ">> Creating db ${DB_NAME}"
-create_db $DB_NAME
+create_db
 if [[ -n $CREATE_DB_ONLY ]]
 then
     [[ -n $BE_VERBOSE ]] && echo ">> Filling db with ${DB_SNAPSHOT}"
