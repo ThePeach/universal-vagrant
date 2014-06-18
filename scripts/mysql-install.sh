@@ -11,4 +11,7 @@ cp /universal-vagrant/configs/my.cnf /etc/mysql/my.cnf
 echo "Restarting MySQL"
 service mysql restart
 
+echo "Installing PHPMyAdmin"
+apt-get install -y -qq phpmyadmin
+echo "Include /etc/phpmyadmin/apache.conf" >> /etc/apache2/apache2.conf
 

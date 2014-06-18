@@ -8,3 +8,4 @@ cp /universal-vagrant/configs/php.ini /etc/php5/apache2/php.ini
 
 echo "Restarting Apache"
 service apache2 restart
+
