@@ -67,7 +67,7 @@ function quit {
 
 function create_db() {
     [[ -n $BE_VERBOSE ]] && echo ">> Creating the database $DB_NAME and the user $DB_USER with password '${DB_PASS}'"
-    mysql -u'${MYSQL_ROOT_USER}' -p'${MYSQL_ROOT_PASS}' <<<EOF
+    mysql -u"${MYSQL_ROOT_USER}" -p"${MYSQL_ROOT_PASS}" <<<EOF
 CREATE DATABASE $DB_NAME CHARACTER SET utf8 COLLATE utf8_general_ci;
 CREATE USER "$DB_USER"@'%' IDENTIFIED BY PASSWORD "${DB_PASS}";
 GRANT ALL ON $DB_NAME.* TO "$DB_USER"@'%';
