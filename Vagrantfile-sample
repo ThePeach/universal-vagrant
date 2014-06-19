@@ -3,34 +3,29 @@
 
 
 # This Vagrantfile is intended to be used with universal-vagrant
-# https://github.com/anwarishak/universal-vagrant/releases
-#
-# This is a sample Vagrantfile. To use it:
-# 1. Make a copy of this file in your web root
-# 2. Rename file to "Vagrantfile"
-# 3. Make any adjustments below (e.g. comment/uncomment provisioners as required, set
-#    permissions of folders, extra manual shell commands when provisioning)
-# 4. Run > vagrant up
-
+# https://github.com/ThePeach/universal-vagrant
 
 VAGRANTFILE_API_VERSION = "2"
 
 # Change the path to universal-vagrant, including a trailing slash
-PATH_TO_UNIVERSAL_VAGRANT = "./"
+PATH_TO_UNIVERSAL_VAGRANT = "../universal-vagrant-peach/"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Basic box
   config.vm.box = "precise32"
   config.vm.box_url = "http://files.vagrantup.com/precise32.box"
+  config.vm.hostname = "projectname"
 
   # Networking: port forwarding
-  config.vm.network :forwarded_port, guest: 80, host: 8080, auto_correct: true
+  config.vm.network :forwarded_port, guest: 80, host: 8080, auto_correct: false
 
   # Synced folders (also add items here to set folder permissions)
-  config.vm.synced_folder PATH_TO_UNIVERSAL_VAGRANT, "/universal-vagrant"
-  #config.vm.synced_folder "./some-cache", "/vagrant/some-cache", :mount_options => ["dmode=777","fmode=666"]
-  #config.vm.synced_folder "./cms-assets", "/vagrant/cms-assets", :mount_options => ["dmode=777","fmode=666"]
+  # Vagrant v1.1+
+  config.vm.synced_folder "./", "/vagrant", id: "vagrant-root",
+    owner: "vagrant",
+    group: "www-data",
+    mount_options: ["dmode=775,fmode=664"]
 
   config.vm.provider :virtualbox do |vb|
     vb.customize ["modifyvm", :id, "--memory", "256"]
@@ -38,19 +33,20 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
-  config.vm.provision :shell, :path => PATH_TO_UNIVERSAL_VAGRANT + "scripts/bootstrap.sh"
-  config.vm.provision :shell, :path => PATH_TO_UNIVERSAL_VAGRANT + "scripts/apache.sh"
-  config.vm.provision :shell, :path => PATH_TO_UNIVERSAL_VAGRANT + "scripts/mysql.sh"
-  config.vm.provision :shell, :path => PATH_TO_UNIVERSAL_VAGRANT + "scripts/php.sh"
+  config.vm.provision "shell", path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/bootstrap.sh"
+  config.vm.provision "shell", path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/mysql-install.sh"
+  config.vm.provision "shell", 
+      path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/mysql.sh",
+      args: "-v"
 
   # Do extra bits of provisioning/configuration, if required
 
-  $script = "
-  echo \"Doing some last minute provisioning\"
-  rm /var/www/default/public_html
-  ln -fs /vagrant/webroot /var/www/default/public_html
-  service apache2 restart
-  "
+  #$script = "
+  #echo \"Doing some last minute provisioning\"
+  #rm /var/www/default/public_html
+  #ln -fs /vagrant/webroot /var/www/default/public_html
+  #service apache2 restart
+  #"
 
   # Uncomment the next line to enable the extra bits of provisioning/configuration
   #config.vm.provision "shell", inline: $script
