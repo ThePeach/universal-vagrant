@@ -6,6 +6,7 @@ DEFAULT_WEBROOT='/var/www'
 WEBROOT=$DEFAULT_WEBROOT/public_html
 MYSQL_ROOT_USER='root'
 MYSQL_ROOT_PASS='password'
+APACHE_DEFAULT_VHOST='/etc/apache2/sites-available/default'
 
 # application variables
 #PROJECT_ROOT=''
@@ -79,7 +80,8 @@ then
 fi
 
 [[ -n $BE_VERBOSE ]] && echo -e "\n>>> PROJECT_ROOT: $PROJECT_ROOT"
-[[ -n $BE_VERBOSE ]] && echo -e ">>> PHP_VERSION: $PHP_VERSION\n"
+[[ -n $BE_VERBOSE ]] && echo -e ">>> PHP_VERSION: $PHP_VERSION"
+[[ -n $BE_VERBOSE ]] && echo -e ">>> APACHE_DEFAULT_VHOST: $APACHE_DEFAULT_VHOST\n"
 
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Install MySQL specific packages and settings ---\n"
 echo "mysql-server mysql-server/root_password password $DB_PASS" | debconf-set-selections
@@ -101,6 +103,7 @@ then
     then
         [[ -n $BE_VERBOSE ]] && echo -e "\n--- Adding PHP 5.5 repo ---\n"
         add-apt-repository ppa:ondrej/php5 > /dev/null 2>&1
+        APACHE_DEFAULT_VHOST="/etc/apache2/sites-available/000-default.conf"
     elif [[ $PHP_VERSION = 'php5.4' ]]
     then
         [[ -n $BE_VERBOSE ]] && echo -e "\n--- Adding PHP 5.4 repo ---\n"
@@ -137,12 +140,12 @@ sudo chown -R vagrant:www-data /var/lock/apache2
 a2enmod rewrite > /dev/null 2>&1
  
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Allowing Apache override to all ---\n"
-sed -i "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/default
+sed -i "s/AllowOverride None/AllowOverride All/g" $APACHE_DEFAULT_VHOST
  
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Setting document root to webroot directory ---\n"
 ln -sf $PROJECT_ROOT $WEBROOT
-sed -i 's|DocumentRoot '$DEFAULT_WEBROOT'$|DocumentRoot '$WEBROOT'|g' /etc/apache2/sites-available/default
-sed -i 's|'$DEFAULT_WEBROOT'/>$|'$WEBROOT'/>|g' /etc/apache2/sites-available/default
+sed -i 's|DocumentRoot '$DEFAULT_WEBROOT'$|DocumentRoot '$WEBROOT'|g' $APACHE_DEFAULT_VHOST
+sed -i 's|'$DEFAULT_WEBROOT'/>$|'$WEBROOT'/>|g' $APACHE_DEFAULT_VHOST
  
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- We definitly need to see the PHP errors, turning them on ---\n"
 sed -i "s/error_reporting = .*/error_reporting = E_ALL/" /etc/php5/apache2/php.ini
