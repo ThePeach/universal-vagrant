@@ -16,8 +16,8 @@
 # and released under the GPLv2
 
 # defaults
-DEFAULT_PROJECT_ROOT="/vagrant/"
-DEFAULT_DB_SNAPSHOT_DIR="${DEFAULT_PROJECT_ROOT}_database/"
+DEFAULT_PROJECT_ROOT="/vagrant"
+DEFAULT_DB_SNAPSHOT_DIR="${DEFAULT_PROJECT_ROOT}/_database/"
 MYSQL_ROOT_USER='root'
 MYSQL_ROOT_PASS='password'
 DEFAULT_DB_USER=$MYSQL_ROOT_USER
@@ -46,7 +46,7 @@ function usage() {
 \t-u <DB_USER>: Name of the user to give credentials to the db <DB_NAME>
 \t-p <DB_PASS>: Password for the <DB_USER>
 \t-s <DB_SNAPSHOT>: absolute path to the sql file to be used to fill the database
-\t-r <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM
+\t-r <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM (no trailing slash)
 \n"
 }
 

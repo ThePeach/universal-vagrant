@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # defaults
-DEFAULT_PROJECT_ROOT='/vagrant/'
+DEFAULT_PROJECT_ROOT='/vagrant'
 DEFAULT_WEBROOT='/var/www'
 WEBROOT=$DEFAULT_WEBROOT/public_html
 MYSQL_ROOT_USER='root'
@@ -23,8 +23,10 @@ function usage() {
     echo -e "Syntax: `basename $0` [-h|-v] [-r <PROJECT_ROOT>] [-n <PHP_VERSION>]
 \t-h: shows this help
 \t-v: be verbose
-\t-r <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM
+\t-r <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM (no trailing slash)
+\t\tWill default to ${DEFAULT_PROJECT_ROOT} if not specified
 \t-n <PHP_VERSION>: [php5.4|php5.5] if not passed it will install the default version
+\t\tavailable from the official repo
 \n"
 }
 
@@ -80,6 +82,7 @@ then
 fi
 
 [[ -n $BE_VERBOSE ]] && echo -e "\n>>> PROJECT_ROOT: $PROJECT_ROOT"
+[[ -n $BE_VERBOSE ]] && echo -e ">>> WEBROOT: $WEBROOT"
 [[ -n $BE_VERBOSE ]] && echo -e ">>> PHP_VERSION: $PHP_VERSION"
 [[ -n $BE_VERBOSE ]] && echo -e ">>> APACHE_DEFAULT_VHOST: $APACHE_DEFAULT_VHOST\n"
 
@@ -138,15 +141,37 @@ sudo chown -R vagrant:www-data /var/lock/apache2
 
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Enabling mod-rewrite ---\n"
 a2enmod rewrite > /dev/null 2>&1
+
+if [[ -n $PHP_VERSION ]] && [[ $PHP_VERSION = 'php5.5' ]]
+then
+    [[ -n $BE_VERBOSE ]] && echo -e "\n--- Replacing the default vhost file ---\n"
+    cat > $APACHE_DEFAULT_VHOST << EOF
+<VirtualHost *:80>
+  DocumentRoot /var/www/public_html
+  <Directory />
+    Options +FollowSymLinks
+    AllowOverride None
+  </Directory>
+  <Directory /var/www/public_html>
+    Options -Indexes +FollowSymLinks +MultiViews
+    AllowOverride all
+    Order allow,deny
+    allow from all
+  </Directory>
+</VirtualHost>   
+EOF
+else
+    [[ -n $BE_VERBOSE ]] && echo -e "\n--- Allowing Apache override to all ---\n"
+    sed -i "s/AllowOverride None/AllowOverride All/g" $APACHE_DEFAULT_VHOST
  
-[[ -n $BE_VERBOSE ]] && echo -e "\n--- Allowing Apache override to all ---\n"
-sed -i "s/AllowOverride None/AllowOverride All/g" $APACHE_DEFAULT_VHOST
- 
-[[ -n $BE_VERBOSE ]] && echo -e "\n--- Setting document root to webroot directory ---\n"
+    [[ -n $BE_VERBOSE ]] && echo -e "\n--- Setting document root to webroot directory ---\n"
+    sed -i 's|DocumentRoot '$DEFAULT_WEBROOT'$|DocumentRoot '$WEBROOT'|g' $APACHE_DEFAULT_VHOST
+    sed -i 's|'$DEFAULT_WEBROOT'/>$|'$WEBROOT'/>|g' $APACHE_DEFAULT_VHOST
+fi
+
+[[ -n $BE_VERBOSE ]] && echo -e "\n--- Linking the document root to webroot directory ---\n"
 ln -sf $PROJECT_ROOT $WEBROOT
-sed -i 's|DocumentRoot '$DEFAULT_WEBROOT'$|DocumentRoot '$WEBROOT'|g' $APACHE_DEFAULT_VHOST
-sed -i 's|'$DEFAULT_WEBROOT'/>$|'$WEBROOT'/>|g' $APACHE_DEFAULT_VHOST
- 
+
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- We definitly need to see the PHP errors, turning them on ---\n"
 sed -i "s/error_reporting = .*/error_reporting = E_ALL/" /etc/php5/apache2/php.ini
 sed -i "s/display_errors = .*/display_errors = On/" /etc/php5/apache2/php.ini
