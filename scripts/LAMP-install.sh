@@ -84,18 +84,27 @@ fi
 [[ -n $BE_VERBOSE ]] && echo -e "\n>>> PROJECT_ROOT: $PROJECT_ROOT"
 [[ -n $BE_VERBOSE ]] && echo -e ">>> WEBROOT: $WEBROOT"
 [[ -n $BE_VERBOSE ]] && echo -e ">>> PHP_VERSION: $PHP_VERSION"
+[[ -n $BE_VERBOSE ]] && echo -e ">>> MYSQL_ROOT_PASS: $MYSQL_ROOT_PASS"
 [[ -n $BE_VERBOSE ]] && echo -e ">>> APACHE_DEFAULT_VHOST: $APACHE_DEFAULT_VHOST\n"
 
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Install MySQL specific packages and settings ---\n"
-echo "mysql-server mysql-server/root_password password $DB_PASS" | debconf-set-selections
-echo "mysql-server mysql-server/root_password_again password $DB_PASS" | debconf-set-selections
+echo "mysql-server mysql-server/root_password password $MYSQL_ROOT_PASS" | debconf-set-selections
+echo "mysql-server mysql-server/root_password_again password $MYSQL_ROOT_PASS" | debconf-set-selections
 #echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-#echo "phpmyadmin phpmyadmin/app-password-confirm password $DB_PASS" | debconf-set-selections
-#echo "phpmyadmin phpmyadmin/mysql/admin-pass password $DB_PASS" | debconf-set-selections
-#echo "phpmyadmin phpmyadmin/mysql/app-pass password $DB_PASS" | debconf-set-selections
+#echo "phpmyadmin phpmyadmin/app-password-confirm password $MYSQL_ROOT_PASS" | debconf-set-selections
+#echo "phpmyadmin phpmyadmin/mysql/admin-pass password $MYSQL_ROOT_PASS" | debconf-set-selections
+#echo "phpmyadmin phpmyadmin/mysql/app-pass password $MYSQL_ROOT_PASS" | debconf-set-selections
 #echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect none" | debconf-set-selections
 #apt-get -y install mysql-server-5.5 phpmyadmin > /dev/null 2>&1
 apt-get -y install mysql-server-5.5 > /dev/null 2>&1
+
+mysql -uroot -p$MYSQL_ROOT_PASS -e "show databases;" > /dev/null 2>&1
+if [[ $? -gt 0 ]]
+then
+    [[ -n $BE_VERBOSE ]] && echo -e "\n!!! Root pass not set, setting it via mysqladmin !!!\n"
+    # let's try to set the root password the good ol' way
+    mysqladmin -uroot password $MYSQL_ROOT_PASS
+fi
  
 #echo "Configuring MySQL"
 #cp /universal-vagrant/configs/my.cnf /etc/mysql/my.cnf
@@ -170,7 +179,7 @@ else
 fi
 
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Linking the document root to webroot directory ---\n"
-ln -sf $PROJECT_ROOT $WEBROOT
+ln -sfn $PROJECT_ROOT $WEBROOT
 
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- We definitly need to see the PHP errors, turning them on ---\n"
 sed -i "s/error_reporting = .*/error_reporting = E_ALL/" /etc/php5/apache2/php.ini
