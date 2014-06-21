@@ -66,9 +66,13 @@ function quit {
 }
 
 function create_db() {
-    [[ -n $BE_VERBOSE ]] && echo ">> Creating the database $DB_NAME and the user $DB_USER with password '${DB_PASS}'"
+    [[ -n $BE_VERBOSE ]] && echo ">> Creating the database $DB_NAME"
     mysql -u${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASS} -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8 COLLATE utf8_general_ci"
-    mysql -u${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASS} -e "grant all privileges on ${DB_NAME}.* to '${DB_USER}'@'%' identified by '${DB_PASS}'"
+    if [[ $DB_USER != $MYSQL_ROOT_USER ]]
+    then
+        [[ -n $BE_VERBOSE ]] && echo ">> Creating the user $DB_USER with password '${DB_PASS}'"
+        mysql -u${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASS} -e "grant all privileges on ${DB_NAME}.* to '${DB_USER}'@'%' identified by '${DB_PASS}'"
+    fi
 }
 
 function load_sql() {
