@@ -73,7 +73,7 @@ function create_db() {
 
 function load_sql() {
     [[ -n $BE_VERBOSE ]] && echo ">> Loading $1 in the $DB_NAME db"
-    mysql -u'${MYSQL_ROOT_USER}' -p'${MYSQL_ROOT_PASS}' $DB_NAME < $1
+    mysql -u${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASS} $DB_NAME < $1
 }
 
 # no problems if there are no arguments passed, we'll use the default arguments
@@ -172,10 +172,10 @@ fi
 
 [[ -n $BE_VERBOSE ]] && echo ">> Creating db ${DB_NAME}"
 create_db
-if [[ -n $CREATE_DB_ONLY ]]
+if [[ ! -n $CREATE_DB_ONLY ]]
 then
     [[ -n $BE_VERBOSE ]] && echo ">> Filling db with ${DB_SNAPSHOT}"
-    query_db $DB_SNAPSHOT
+    load_sql $DB_SNAPSHOT
 fi
 
 exit 0
