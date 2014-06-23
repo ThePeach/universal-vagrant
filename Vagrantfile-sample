@@ -33,22 +33,28 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
-  config.vm.provision "shell", path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/bootstrap.sh"
-  config.vm.provision "shell", path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/mysql-install.sh"
+  config.vm.provision "shell",
+      path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/bootstrap.sh"
+  config.vm.provision "shell",
+      path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/LAMP-install.sh",
+      args: "-v"
+  # comment the next 3 lines if mysql databases are not required
   config.vm.provision "shell", 
       path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/mysql.sh",
       args: "-v"
+  # uncomment the next 2 lines if you need Yii 1.1 installed in your box
+  #config.vm.provision "shell",
+  #    path: PATH_TO_UNIVERSAL_VAGRANT + "scripts/yii-1.1.sh"
 
-  # Do extra bits of provisioning/configuration, if required
+  # Do extra bits of provisioning/configuration, amend and uncomment if required
 
   #$script = "
   #echo \"Doing some last minute provisioning\"
   #rm /var/www/default/public_html
-  #ln -fs /vagrant/webroot /var/www/default/public_html
+  #ln -sfn /vagrant/webroot /var/www/default/public_html
   #service apache2 restart
   #"
-
-  # Uncomment the next line to enable the extra bits of provisioning/configuration
+  #
   #config.vm.provision "shell", inline: $script
 
 end
