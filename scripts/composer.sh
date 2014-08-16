@@ -92,6 +92,13 @@ fi
 
 [[ -n $BE_VERBOSE ]] && echo ">> PROJECT_ROOT: ${PROJECT_ROOT}"
 
-[[ -n $BE_VERBOSE ]] && echo ">> Installing or updating the project requirements"
 cd "${PROJECT_ROOT}"
-composer update ${NO_DEV_OPT[@]} --prefer-dist
+
+if [[ -d "vendor" ]]
+then
+    [[ -n $BE_VERBOSE ]] && echo ">> Cleaning the installed packages for the project"
+    rm -rf vendor/*
+fi
+
+[[ -n $BE_VERBOSE ]] && echo ">> Installing the project requirements"
+composer install ${NO_DEV_OPT[@]} --prefer-dist
