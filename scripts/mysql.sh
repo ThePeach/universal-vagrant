@@ -31,7 +31,7 @@ DEFAULT_DB_PASS=$MYSQL_ROOT_PASS
 #DB_PASS=""
 
 # application related variables
-VERSION="0.3"
+VERSION="0.4"
 NO_ARGS=0
 E_OPTERROR=85
 E_GENERROR=25
@@ -45,7 +45,8 @@ function usage() {
 \t-d <DB_NAME>: Name of the database to create
 \t-u <DB_USER>: Name of the user to give credentials to the db <DB_NAME>
 \t-p <DB_PASS>: Password for the <DB_USER>
-\t-s <DB_SNAPSHOT>: absolute path to the sql file to be used to fill the database
+\t-s <DB_SNAPSHOT>: absolute path to the SQL file to be used to fill the database
+\t\tThe file can be compressed using either BZip2 or GZip compression.
 \t-r <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM (no trailing slash)
 \n"
 }
@@ -77,7 +78,22 @@ function create_db() {
 
 function load_sql() {
     [[ -n $BE_VERBOSE ]] && echo ">> Loading $1 in the $DB_NAME db"
-    mysql -u${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASS} $DB_NAME < $1
+
+    # check if the DB snapshot $1 is compressed
+    compression=`file "$1" | grep -oP "[gb]zip"`
+
+    if [ $compression == 'gzip' ]
+    then
+        [[ -n $BE_VERBOSE ]] && echo "!! Found GZip archive, uncompressing on the fly."
+        zcat $1 | mysql -u${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASS} $DB_NAME
+    elif [ $compression == 'bzip' ]
+    then
+        [[ -n $BE_VERBOSE ]] && echo "!! Found BZip2 archive, uncompressing on the fly."
+        bzcat $1 | mysql -u${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASS} $DB_NAME
+    else
+        # no compression or wrong file... let's leave it to mysql
+        mysql -u${MYSQL_ROOT_USER} -p${MYSQL_ROOT_PASS} $DB_NAME < $1
+    fi
 }
 
 # no problems if there are no arguments passed, we'll use the default arguments
