@@ -183,7 +183,7 @@ fi
 [[ -n $BE_VERBOSE ]] && echo ">> DB_NAME     : ${DB_NAME}"
 [[ -n $BE_VERBOSE ]] && echo ">> DB_USER     : ${DB_USER}"
 [[ -n $BE_VERBOSE ]] && echo ">> DB_PASS     : ${DB_PASS}"
-[[ -n $BE_VERBOSE && ! -n $DB_SNAPSHOT ]] && echo ">> DB_SNAPSHOT : ${DB_SNAPSHOT}"
+[[ -n $BE_VERBOSE && -n $DB_SNAPSHOT ]] && echo ">> DB_SNAPSHOT : ${DB_SNAPSHOT}"
 
 # no snapshot no party
 if [[ ! -n ${DB_NAME} && ! -n ${DB_SNAPSHOT} ]]
