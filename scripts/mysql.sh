@@ -31,7 +31,7 @@ DEFAULT_DB_PASS=$MYSQL_ROOT_PASS
 #DB_PASS=""
 
 # application related variables
-VERSION="0.4"
+VERSION="0.5"
 NO_ARGS=0
 E_OPTERROR=85
 E_GENERROR=25
@@ -151,9 +151,10 @@ then
 fi
 
 # DEPRECATED - retro-compatibility stuff
-# DB_SNAPSHOT has not been passed
-if [[ ! -n $DB_SNAPSHOT ]]
+# DB_SNAPSHOT and DB_NAME has not been passed
+if [[ ! -n $DB_SNAPSHOT && ! -n $DB_NAME ]]
 then
+    [[ -n $BE_VERBOSE ]] && echo ">> No snapshot defined, trying to guess."
     # let's look in DEFAULT_DB_SNAPSHOT_DIR
     if [[ -e $DEFAULT_DB_SNAPSHOT_DIR ]]
     then
@@ -165,12 +166,14 @@ then
             DB_NAME=`basename $file .sql`
         done
     fi
-elif [[ ! -n $DB_SNAPSHOT ]] && [[ -n $DB_NAME ]]
+fi
+
+if [[ ! -n $DB_SNAPSHOT && -n $DB_NAME ]]
 then
-    echo ">> no snapshot defined, db ${DB_NAME} creation only."
     # no snapshot, but we have a db name, create only
+    echo ">> no snapshot defined, db '${DB_NAME}' creation only."
     CREATE_DB_ONLY=true
-elif [[ -n $DB_SNAPSHOT ]] && [[ ! -n $DB_NAME ]]
+elif [[ -n $DB_SNAPSHOT && ! -n $DB_NAME ]]
 then
     echo ">> snapshot defined, no db defined. Guessing."
     DB_NAME=`basename $DB_SNAPSHOT .sql`
@@ -180,12 +183,12 @@ fi
 [[ -n $BE_VERBOSE ]] && echo ">> DB_NAME     : ${DB_NAME}"
 [[ -n $BE_VERBOSE ]] && echo ">> DB_USER     : ${DB_USER}"
 [[ -n $BE_VERBOSE ]] && echo ">> DB_PASS     : ${DB_PASS}"
-[[ -n $BE_VERBOSE ]] && echo ">> DB_SNAPSHOT : ${DB_SNAPSHOT}"
+[[ -n $BE_VERBOSE && -n $DB_SNAPSHOT ]] && echo ">> DB_SNAPSHOT : ${DB_SNAPSHOT}"
 
 # no snapshot no party
-if [[ ! -n ${DB_NAME} ]] && [[ ! -n ${DB_SNAPSHOT} ]]
+if [[ ! -n ${DB_NAME} && ! -n ${DB_SNAPSHOT} ]]
 then
-    [[ -n $BE_VERBOSE ]] && echo ">> Snapshot not found. Exiting."
+    [[ -n $BE_VERBOSE ]] && echo ">> No snapshot and no db defined. Exiting."
     exit 0
 fi
 

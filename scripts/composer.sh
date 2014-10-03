@@ -20,9 +20,10 @@ DEFAULT_PROJECT_ROOT="/vagrant/webroot"
 
 # application variables
 #PROJECT_ROOT=""
+#AUTH_TOKEN=""
 
 # application related variables
-VERSION="0.1"
+VERSION="0.2"
 NO_ARGS=0
 E_OPTERROR=85
 E_GENERROR=25
@@ -30,10 +31,11 @@ OLD_IFS="$IFS"
 IFS=','
 
 function usage() {
-    echo -e "Syntax: `basename $0` [-h|-v] [-l] [-r <PROJECT_ROOT>]
+    echo -e "Syntax: `basename $0` [-h|-v] [-l] [-k <AUTH_TOKEN>] [-r <PROJECT_ROOT>]
 \t-h: shows this help
 \t-v: be verbose
 \t-l: Will avoid installing development (require-dev) dependencies
+\t-k <AUTH_TOKEN>: Use the GitHub authentication token provided (if needed)
 \t-r <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM (no trailing slash)
 \n"
 }
@@ -61,8 +63,8 @@ function quit {
 #fi
 
 # The expected flags are
-#  h v r
-while getopts ":hvd:u:p:s:" Option
+#  h v l k r
+while getopts ":hvlk:r:" Option
 do
     case $Option in
         h ) version
@@ -71,7 +73,9 @@ do
             ;;
         v ) BE_VERBOSE=true
             ;;
-        e ) NO_DEV_OPT=("--no-dev")
+        l ) NO_DEV_OPT=("--no-dev")
+            ;;
+        k ) AUTH_TOKEN=$OPTARG
             ;;
         r ) [ ! -e $OPTARG ] && error "'$OPTARG' not accessible" && quit $E_OPTERROR
             PROJECT_ROOT=$OPTARG
@@ -87,10 +91,20 @@ shift $(($OPTIND - 1))
 # initialise the missing variables
 if [[ ! -n $PROJECT_ROOT ]]
 then
+    if [[ ! -e $DEFAULT_PROJECT_ROOT ]]
+    then
+        error "$DEFAULT_PROJECT_ROOT not found or not accessible" && quit $E_OPTERROR
+    fi
     PROJECT_ROOT=${DEFAULT_PROJECT_ROOT}
 fi
 
 [[ -n $BE_VERBOSE ]] && echo ">> PROJECT_ROOT: ${PROJECT_ROOT}"
+
+if [[ -n $AUTH_TOKEN ]]
+then
+    [[ -n $BE_VERBOSE ]] && echo ">> Installing GitHub auth key globally"
+    composer config -g github-oauth.github.com $AUTH_TOKEN
+fi
 
 cd "${PROJECT_ROOT}"
 
@@ -100,5 +114,8 @@ then
     rm -rf vendor/*
 fi
 
+[[ -n $BE_VERBOSE ]] && echo ">> Installing composer assets management plugin"
+composer global require "fxp/composer-asset-plugin:1.0.0-beta2"
 [[ -n $BE_VERBOSE ]] && echo ">> Installing the project requirements"
 composer install ${NO_DEV_OPT[@]} --prefer-dist
+
