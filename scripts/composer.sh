@@ -117,5 +117,5 @@ fi
 [[ -n $BE_VERBOSE ]] && echo ">> Installing composer assets management plugin"
 composer global require "fxp/composer-asset-plugin:1.0.0-beta2"
 [[ -n $BE_VERBOSE ]] && echo ">> Installing the project requirements"
-composer install ${NO_DEV_OPT[@]} --prefer-dist
+composer install --no-progress ${NO_DEV_OPT[@]} --prefer-dist
 
