@@ -31,7 +31,7 @@ DEFAULT_DB_PASS=$MYSQL_ROOT_PASS
 #DB_PASS=""
 
 # application related variables
-VERSION="0.5"
+VERSION="0.6"
 NO_ARGS=0
 E_OPTERROR=85
 E_GENERROR=25
