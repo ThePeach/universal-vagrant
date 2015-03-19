@@ -23,7 +23,7 @@ DEFAULT_PROJECT_ROOT="/vagrant/webroot"
 #AUTH_TOKEN=""
 
 # application related variables
-VERSION="0.2"
+VERSION="0.3"
 NO_ARGS=0
 E_OPTERROR=85
 E_GENERROR=25
@@ -115,7 +115,7 @@ then
 fi
 
 [[ -n $BE_VERBOSE ]] && echo ">> Installing composer assets management plugin"
-composer global require "fxp/composer-asset-plugin:1.0.0-beta2"
+composer global require "fxp/composer-asset-plugin:1.0.0"
 [[ -n $BE_VERBOSE ]] && echo ">> Installing the project requirements"
 composer install --no-progress ${NO_DEV_OPT[@]} --prefer-dist
 
