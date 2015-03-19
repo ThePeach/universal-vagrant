@@ -185,8 +185,8 @@ ln -sfn $PROJECT_ROOT $WEBROOT
 sed -i "s/error_reporting = .*/error_reporting = E_ALL/" /etc/php5/apache2/php.ini
 sed -i "s/display_errors = .*/display_errors = On/" /etc/php5/apache2/php.ini
 
-[[ -n $BE_VERBOSE ]] && echo -e "\n--- Setting timezone to Europe/London ---\n"
-sed -i "s/;date.timezone =.*/date.timezone = \"Europe\/London\"/" /etc/php5/apache2/php.ini
+[[ -n $BE_VERBOSE ]] && echo -e "\n--- Setting timezone to UTC ---\n"
+sed -i "s/;date.timezone =.*/date.timezone = \"UTC\"/" /etc/php5/apache2/php.ini
 
 #echo -e "\n--- Turn off disabled pcntl functions so we can use Boris ---\n"
 #sed -i "s/disable_functions = .*//" /etc/php5/cli/php.ini
