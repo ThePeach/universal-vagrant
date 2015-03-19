@@ -105,7 +105,7 @@ then
     # let's try to set the root password the good ol' way
     mysqladmin -uroot password $MYSQL_ROOT_PASS
 fi
- 
+
 #echo "Configuring MySQL"
 #cp /universal-vagrant/configs/my.cnf /etc/mysql/my.cnf
 
@@ -167,12 +167,12 @@ then
     Order allow,deny
     allow from all
   </Directory>
-</VirtualHost>   
+</VirtualHost>
 EOF
 else
     [[ -n $BE_VERBOSE ]] && echo -e "\n--- Allowing Apache override to all ---\n"
     sed -i "s/AllowOverride None/AllowOverride All/g" $APACHE_DEFAULT_VHOST
- 
+
     [[ -n $BE_VERBOSE ]] && echo -e "\n--- Setting document root to webroot directory ---\n"
     sed -i 's|DocumentRoot '$DEFAULT_WEBROOT'$|DocumentRoot '$WEBROOT'|g' $APACHE_DEFAULT_VHOST
     sed -i 's|'$DEFAULT_WEBROOT'/>$|'$WEBROOT'/>|g' $APACHE_DEFAULT_VHOST
@@ -184,10 +184,13 @@ ln -sfn $PROJECT_ROOT $WEBROOT
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- We definitly need to see the PHP errors, turning them on ---\n"
 sed -i "s/error_reporting = .*/error_reporting = E_ALL/" /etc/php5/apache2/php.ini
 sed -i "s/display_errors = .*/display_errors = On/" /etc/php5/apache2/php.ini
- 
+
+[[ -n $BE_VERBOSE ]] && echo -e "\n--- Setting timezone to UTC ---\n"
+sed -i "s/;date.timezone =.*/date.timezone = \"UTC\"/" /etc/php5/apache2/php.ini
+
 #echo -e "\n--- Turn off disabled pcntl functions so we can use Boris ---\n"
 #sed -i "s/disable_functions = .*//" /etc/php5/cli/php.ini
- 
+
 #echo -e "\n--- Configure Apache to use phpmyadmin ---\n"
 #echo -e "\n\nListen 81\n" >> /etc/apache2/ports.conf
 #cat > /etc/apache2/conf-available/phpmyadmin.conf << "EOF"
@@ -203,12 +206,11 @@ sed -i "s/display_errors = .*/display_errors = On/" /etc/php5/apache2/php.ini
 
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Restarting Apache ---\n"
 service apache2 restart > /dev/null 2>&1
-                                 
+
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Installing Composer for PHP package management ---\n"
 curl --silent https://getcomposer.org/installer | php > /dev/null 2>&1
 mv composer.phar /usr/local/bin/composer
- 
+
 #echo -e "\n--- Updating project components and pulling latest versions ---\n"
 #cd /vagrant
 #sudo -u vagrant -H sh -c "composer install" > /dev/null 2>&1
-
