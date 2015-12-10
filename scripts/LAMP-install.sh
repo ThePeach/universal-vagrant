@@ -25,7 +25,7 @@ function usage() {
 \t-v: be verbose
 \t-r <PROJECT_ROOT>: absolute path of the projcet root in the vagrant VM (no trailing slash)
 \t\tWill default to ${DEFAULT_PROJECT_ROOT} if not specified
-\t-n <PHP_VERSION>: [php5.4|php5.5] if not passed it will install the default version
+\t-n <PHP_VERSION>: [php5.4|php5.5|php5.6] if not passed it will install the default version
 \t\tavailable from the official repo
 \n"
 }
@@ -111,7 +111,12 @@ fi
 
 if [[ -n $PHP_VERSION ]]
 then
-    if [[ $PHP_VERSION = 'php5.5' ]]
+    if [[ $PHP_VERSION = 'php5.6' ]]
+    then
+        [[ -n $BE_VERBOSE ]] && echo -e "\n--- Adding PHP 5.6 repo ---\n"
+        add-apt-repository ppa:ondrej/php5-5.6 > /dev/null 2>&1
+        APACHE_DEFAULT_VHOST="/etc/apache2/sites-available/000-default.conf"
+    elif [[ $PHP_VERSION = 'php5.5' ]]
     then
         [[ -n $BE_VERBOSE ]] && echo -e "\n--- Adding PHP 5.5 repo ---\n"
         add-apt-repository ppa:ondrej/php5 > /dev/null 2>&1
@@ -124,7 +129,7 @@ then
         version
         usage
         echo -e "\n!!! Parameter not understood. !!!"
-        [[ -n $BE_VERBOSE ]] && echo -e "\n!!! Got $PHP_VERSION, it should be either php5.4 or php5.5 !!! "
+        [[ -n $BE_VERBOSE ]] && echo -e "\n!!! Got $PHP_VERSION, it should be either php5.4, php5.5 or php5.6 !!! "
         quit $E_GENERROR
     fi
 
@@ -151,7 +156,7 @@ sudo chown -R vagrant:www-data /var/lock/apache2
 [[ -n $BE_VERBOSE ]] && echo -e "\n--- Enabling mod-rewrite ---\n"
 a2enmod rewrite > /dev/null 2>&1
 
-if [[ -n $PHP_VERSION ]] && [[ $PHP_VERSION = 'php5.5' ]]
+if [[ -n $PHP_VERSION ]] && [[ $PHP_VERSION = 'php5.5' || $PHP_VERSION = 'php5.6' ]]
 then
     [[ -n $BE_VERBOSE ]] && echo -e "\n--- Replacing the default vhost file ---\n"
     cat > $APACHE_DEFAULT_VHOST << EOF
